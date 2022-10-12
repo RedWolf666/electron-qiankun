@@ -1,8 +1,15 @@
+import parseHTMLandloadSources from '../utils/parseHTMLandloadSources'
 import { isPromise } from '../utils/utils'
 import { AppStatus } from '../config'
 
-export default async function bootstrapApp(app) {    
-    const { bootstrap, mount, unmount } = await app.loadApp()
+export default async function bootstrapApp(app) {
+    try {
+        // 加载 js css
+        await parseHTMLandloadSources(app)
+    } catch (error) {
+        throw error
+    }
+    const { bootstrap, mount, unmount } = await getLifeCycleFuncs(app.name)
 
     validateLifeCycleFunc('bootstrap', bootstrap)
     validateLifeCycleFunc('mount', mount)
@@ -11,15 +18,15 @@ export default async function bootstrapApp(app) {
     app.bootstrap = bootstrap
     app.mount = mount
     app.unmount = unmount
-
+    
     try {
         app.props = await getProps(app.props)
     } catch (err) {
         app.status = AppStatus.BOOTSTRAP_ERROR
         throw err
     }
-
-    let result = app.bootstrap(app.props)
+    
+    let result = app.bootstrap({ props: app.props, container: app.container })
     if (!isPromise(result)) {
         result = Promise.resolve(result)
     }
@@ -44,4 +51,17 @@ function validateLifeCycleFunc(name, fn) {
     if (typeof fn !== 'function') {
         throw Error(`The "${name}" must be a function`)
     }
+}
+
+async function getLifeCycleFuncs(name) {
+    const result = window[`mini-single-spa-${name}`]
+    if (typeof result === 'function') {
+        return result()
+    }
+
+    if (typeof result === 'object') {
+        return result
+    }
+
+    throw Error(`The micro app must inject the lifecycle("bootstrap" "mount" "unmount") into window['mini-single-spa-${name}']`)
 }

@@ -1,10 +1,14 @@
 import { loadApps } from './application/apps'
 
 let isStarted = false
-export function start() {
+export default function start() {
     if (!isStarted) {
         isStarted = true
-        loadApps()
+        try {
+            loadApps()
+        } catch (error) {
+            throw error
+        }
     }
 }
 

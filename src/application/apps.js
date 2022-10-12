@@ -1,24 +1,22 @@
 import bootstrapApp from '../lifecycle/bootstrap'
 import mountApp from '../lifecycle/mount'
 import unMountApp from '../lifecycle/unmount'
-import {AppStatus } from '../config'
+import { AppStatus } from '../config'
 
 export const apps = []
 
 export async function loadApps() {
-	// 先卸载所有失活的子应用
-    const toUnMountApp = getAppsWithStatus(AppStatus.MOUNTED)
-    await Promise.all(toUnMountApp.map(unMountApp))
-    
-    // 初始化所有刚注册的子应用
     const toLoadApp = getAppsWithStatus(AppStatus.BEFORE_BOOTSTRAP)
-    await Promise.all(toLoadApp.map(bootstrapApp))
-
+    const toUnMountApp = getAppsWithStatus(AppStatus.MOUNTED)
+    const loadPromise = toLoadApp.map(bootstrapApp)
+    const unMountPromise = toUnMountApp.map(unMountApp)
+    await Promise.all([...loadPromise, ...unMountPromise])
+    
     const toMountApp = [
         ...getAppsWithStatus(AppStatus.BOOTSTRAPPED),
         ...getAppsWithStatus(AppStatus.UNMOUNTED),
     ]
-    // 加载所有符合条件的子应用
+    
     await toMountApp.map(mountApp)
 }
 

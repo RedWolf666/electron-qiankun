@@ -1,10 +1,10 @@
 import { isPromise } from '../utils/utils'
 import { AppStatus } from '../config'
 
-export default function unMountApp(app){
+export default function unMountApp(app) {
     app.status = AppStatus.BEFORE_UNMOUNT
 
-    let result = app.unmount(app.props)
+    let result = app.unmount({ props: app.props, container: app.container })
     if (!isPromise(result)) {
         result = Promise.resolve(result)
     }
